@@ -1,0 +1,9 @@
+{
+  "name": "lr2",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/matrix.js",
+  "scripts": {
+    "test": "mocha"
+  }
+}
