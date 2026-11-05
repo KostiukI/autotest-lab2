@@ -19,13 +19,18 @@ class Matrix {
   get cols() { return this._cols; }
 
   get(i, j) {
-    if (!Number.isInteger(i) || !Number.isInteger(j) ||
-        i < 0 || j < 0 || i >= this._rows || j >= this._cols) {
-      throw new Error(`Matrix: index (${i}, ${j}) is out of range ` +
-        `for a ${this._rows}x${this._cols} matrix`);
+      this._checkIndex(i, j);
+      return this._values[i][j];
     }
-    return this._values[i][j];
-  }
+
+  _checkIndex(i, j) {
+      const ok = Number.isInteger(i) && Number.isInteger(j) &&
+      i >= 0 && j >= 0 && i < this._rows && j < this._cols;
+      if (!ok) {
+        throw new Error(`Matrix: index (${i}, ${j}) is out of range ` +
+        `for a ${this._rows}x${this._cols} matrix`);
+      }
+    }
 
   static zeros(r, c = r) {
     return new Matrix(Array.from({ length: r }, () => new Array(c).fill(0)));
@@ -41,27 +46,25 @@ class Matrix {
   }
 
   add(other) {
-    if (!(other instanceof Matrix)) {
-      throw new Error('Matrix: expected a Matrix instance');
-    }
-    if (this._rows !== other._rows || this._cols !== other._cols) {
-      throw new Error(`Matrix: shape mismatch: ` +
-        `${this._rows}x${this._cols} vs ${other._rows}x${other._cols}`);
-    }
+    Matrix._requireSameShape(this, other);
     return new Matrix(this._values.map((row, i) =>
-      row.map((v, j) => v + other._values[i][j])));
+    row.map((v, j) => v + other._values[i][j])));
   }
 
   sub(other) {
-    if (!(other instanceof Matrix)) {
+    Matrix._requireSameShape(this, other);
+    return new Matrix(this._values.map((row, i) =>
+    row.map((v, j) => v - other._values[i][j])));
+  }
+
+  static _requireSameShape(a, b) {
+    if (!(b instanceof Matrix)) {
       throw new Error('Matrix: expected a Matrix instance');
     }
-    if (this._rows !== other._rows || this._cols !== other._cols) {
+    if (a._rows !== b._rows || a._cols !== b._cols) {
       throw new Error(`Matrix: shape mismatch: ` +
-        `${this._rows}x${this._cols} vs ${other._rows}x${other._cols}`);
+      `${a._rows}x${a._cols} vs ${b._rows}x${b._cols}`);
     }
-    return new Matrix(this._values.map((row, i) =>
-      row.map((v, j) => v - other._values[i][j])));
   }
 
   scale(k) {
@@ -90,16 +93,17 @@ class Matrix {
     if (this._rows !== this._cols) {
       throw new Error('Matrix: determinant is defined only for square matrices');
     }
-    const rec = (m) => {
-      if (m.length === 1) return m[0][0];
-      let sum = 0;
-      for (let j = 0; j < m.length; j++) {
-        const minor = m.slice(1).map((row) => row.filter((_, col) => col !== j));
-        sum += (j % 2 === 0 ? 1 : -1) * m[0][j] * rec(minor);
-      }
-      return sum;
-    };
-    return rec(this._values);
+    return Matrix._det(this._values);
+  }
+
+  static _det(m) {
+    if (m.length === 1) return m[0][0];
+    let sum = 0;
+    for (let j = 0; j < m.length; j++) {
+      const minor = m.slice(1).map((row) => row.filter((_, col) => col !== j));
+      sum += (j % 2 === 0 ? 1 : -1) * m[0][j] * Matrix._det(minor);
+    }
+    return sum;
   }
 
   toString() {
